@@ -48,6 +48,8 @@ export function AdminDashboard({ onBack }: { onBack: () => void }) {
   const [search, setSearch] = useState('');
   const [filterVeg, setFilterVeg] = useState<'all' | 'veg' | 'meat'>('all');
   const [filterRarity, setFilterRarity] = useState<string>('all');
+  const [adminMinPrice, setAdminMinPrice] = useState<string>('');
+  const [adminMaxPrice, setAdminMaxPrice] = useState<string>('');
 
   // GitHub Settings
   const [ghOwner, setGhOwner] = useState(() => localStorage.getItem('admin_gh_owner') || 'khanghohy');
@@ -120,13 +122,17 @@ export function AdminDashboard({ onBack }: { onBack: () => void }) {
 
   // Filtered dishes
   const filteredDishes = useMemo(() => {
+    const minP = adminMinPrice.trim() !== '' && !isNaN(Number(adminMinPrice)) ? Number(adminMinPrice) : null;
+    const maxP = adminMaxPrice.trim() !== '' && !isNaN(Number(adminMaxPrice)) ? Number(adminMaxPrice) : null;
     return dishes.filter(f => {
       const matchSearch = f.name.toLowerCase().includes(search.toLowerCase()) || f.sub.toLowerCase().includes(search.toLowerCase());
       const matchVeg = filterVeg === 'all' ? true : filterVeg === 'veg' ? f.veg : !f.veg;
       const matchRarity = filterRarity === 'all' ? true : String(f.rarity) === filterRarity;
-      return matchSearch && matchVeg && matchRarity;
+      const matchMin = minP === null || f.price >= minP;
+      const matchMax = maxP === null || f.price <= maxP;
+      return matchSearch && matchVeg && matchRarity && matchMin && matchMax;
     });
-  }, [dishes, search, filterVeg, filterRarity]);
+  }, [dishes, search, filterVeg, filterRarity, adminMinPrice, adminMaxPrice]);
 
   // Open modal to add or edit
   const openAddModal = () => {
@@ -465,6 +471,8 @@ export function AdminDashboard({ onBack }: { onBack: () => void }) {
             <span>Món chay: <strong className="text-emerald-400">{dishes.filter(f => f.veg).length} món</strong></span>
             <span>·</span>
             <span>Giá TB: <strong className="text-amber-400">{Math.round(dishes.reduce((a, b) => a + b.price, 0) / dishes.length)}k VND</strong></span>
+            <span>·</span>
+            <span>Hiện: <strong className="text-zinc-100">{filteredDishes.length}/{dishes.length}</strong></span>
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto flex-wrap sm:flex-nowrap">
@@ -500,6 +508,26 @@ export function AdminDashboard({ onBack }: { onBack: () => void }) {
               <option value="3">Đỏ (90-140k)</option>
               <option value="4">Vàng Dao (≥140k)</option>
             </select>
+
+            <div className="flex items-center gap-1 bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-1 shrink-0">
+              <input
+                type="number"
+                placeholder="Min (k)"
+                title="Giá tối thiểu (nghìn đồng)"
+                value={adminMinPrice}
+                onChange={e => setAdminMinPrice(e.target.value)}
+                className="w-16 bg-transparent text-xs text-zinc-200 focus:outline-none"
+              />
+              <span className="text-zinc-500 text-xs">—</span>
+              <input
+                type="number"
+                placeholder="Trần (k)"
+                title="Mức giá trần (nghìn đồng)"
+                value={adminMaxPrice}
+                onChange={e => setAdminMaxPrice(e.target.value)}
+                className="w-16 bg-transparent text-xs text-zinc-200 focus:outline-none"
+              />
+            </div>
           </div>
         </div>
 
