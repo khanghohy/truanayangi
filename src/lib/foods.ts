@@ -976,3 +976,20 @@ export const foods:Food[]=[
   "image": 131
 }
 ].map(food=>({...food,rarity:priceRarity(food.price)}));
+
+export function serializeFoodsToTs(foodList: Food[]): string {
+  const cleanList = foodList.map(f => ({
+    name: f.name,
+    sub: f.sub,
+    price: f.price,
+    image: f.image,
+    ...(f.veg ? { veg: true } : {}),
+    quip: f.quip || ''
+  }));
+  return `import { priceRarity } from './case-mechanics';
+export type Food = { customId?: string; name: string; sub: string; price: number; rarity: number; image: number; veg?: boolean; quip: string };
+// Approximate lunch portion prices in thousands of VND, not restaurant quotes.
+export const foods: Food[] = ${JSON.stringify(cleanList, null, 2)}.map(food => ({ ...food, rarity: priceRarity(food.price) }));
+`;
+}
+

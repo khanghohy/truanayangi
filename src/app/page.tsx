@@ -10,10 +10,11 @@ import { personalFoods, personalSelector } from '@/lib/personal-pool';
 import { CaseAudio } from '@/lib/case-audio';
 import { flushSync } from 'react-dom';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUpRight, AudioLines, Volume2, VolumeX, Sparkles, Utensils, Leaf } from 'lucide-react';
+import { ArrowUpRight, AudioLines, Volume2, VolumeX, Sparkles, Utensils, Leaf, Settings } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { AdminDashboard } from '@/components/admin/AdminDashboard';
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
@@ -41,6 +42,13 @@ function MysteryArt({language}:{language:Language}){return <div className="myste
 const Card=memo(function Card({food,language,small=false,slot}:{food:Food;language:Language;small?:boolean;slot?:number}){const mystery=!small&&food.rarity===4,t=copy[language];return <div className={`food-card ${small?'small':''} ${mystery?'mystery-card':''}`} data-slot-id={slot} data-food-id={food.image} style={{'--rarity':colors[food.rarity],...(slot===undefined?{}:{position:'absolute',left:slot*254})} as React.CSSProperties}><span className="tier">{t.tiers[food.rarity]}</span>{mystery?<MysteryArt language={language}/>:<FoodImage food={food} language={language}/>}<div className="card-copy"><strong>{mystery?t.mystery:foodName(food,language)}</strong><span>{small?priceLabel(food.price,language,true):foodSubtitle(food,language)}</span></div></div>});
 
 export default function Home(){
+ const [isAdmin,setIsAdmin]=useState(()=>typeof window!=='undefined'&&window.location.hash==='#admin');
+ useEffect(()=>{
+  const onHash=()=>setIsAdmin(window.location.hash==='#admin');
+  window.addEventListener('hashchange',onHash);
+  return ()=>window.removeEventListener('hashchange',onHash);
+ },[]);
+
  const {count:localSpins,enabled:counterEnabled,recordSpin}=useLocalSpinCount();
  const [language,setLanguage]=useState<Language>('vi');
  const preferences=usePreferences();
@@ -129,13 +137,17 @@ export default function Home(){
   frame.current=requestAnimationFrame(animate);
  }
 
+ if(isAdmin){
+  return <AdminDashboard onBack={()=>{window.location.hash='';setIsAdmin(false)}}/>;
+ }
+
  return <div className="site-shell">
  <header><a href={`${basePath}/`} className="brand">
   <picture>
    <source media="(max-width: 900px)" srcSet={`${basePath}/brand/icon-cs-v2.webp`}/>
    <img className="brand-logo" src={`${basePath}/brand/logo-cs-v2.webp`} width={180} height={60} alt="Trưa Nay Ăn Gì" fetchPriority="high"/>
   </picture>
- </a><div className="header-actions"><PreferencesPanel preferences={preferences} language={language} disabled={spinning}/><button className="language-button" onClick={()=>changeLanguage(language==='vi'?'en':'vi')} aria-label={t.language}>{language==='vi'?'EN':'VI'}</button><button className="sound-button" onClick={()=>{audio.current?.setMuted(sound);setSound(!sound)}} aria-label={sound?t.turnSoundOff:t.turnSoundOn}>{sound?<Volume2 size={18}/>:<VolumeX size={18}/>}<span>{sound?t.soundOn:t.soundOff}</span></button><a className="github-button" href="https://github.com/truanayangi-com/truanayangi" target="_blank" rel="noreferrer" aria-label={t.github}><svg className="github-mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.71.5.1.68-.22.68-.49v-1.91c-2.78.62-3.37-1.21-3.37-1.21-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.62.07-.62 1 .08 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.86.09-.66.35-1.12.64-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.96a9.3 9.3 0 0 1 2.5.35c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.89v2.8c0 .27.18.59.69.49A10.25 10.25 0 0 0 22 12.23C22 6.58 17.52 2 12 2Z"/></svg><span className="github-label">GitHub</span></a></div></header>
+ </a><div className="header-actions"><button className="admin-button" onClick={()=>{window.location.hash='#admin';setIsAdmin(true)}} aria-label="Admin" title={language==='vi'?'Quản trị món ăn (Admin)':'Admin Dashboard'}><Settings size={16}/><span>Admin</span></button><PreferencesPanel preferences={preferences} language={language} disabled={spinning}/><button className="language-button" onClick={()=>changeLanguage(language==='vi'?'en':'vi')} aria-label={t.language}>{language==='vi'?'EN':'VI'}</button><button className="sound-button" onClick={()=>{audio.current?.setMuted(sound);setSound(!sound)}} aria-label={sound?t.turnSoundOff:t.turnSoundOn}>{sound?<Volume2 size={18}/>:<VolumeX size={18}/>}<span>{sound?t.soundOn:t.soundOff}</span></button><a className="github-button" href="https://github.com/khanghohy/truanayangi" target="_blank" rel="noreferrer" aria-label={t.github}><svg className="github-mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.71.5.1.68-.22.68-.49v-1.91c-2.78.62-3.37-1.21-3.37-1.21-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.62.07-.62 1 .08 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.86.09-.66.35-1.12.64-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.96a9.3 9.3 0 0 1 2.5.35c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.89v2.8c0 .27.18.59.69.49A10.25 10.25 0 0 0 22 12.23C22 6.58 17.52 2 12 2Z"/></svg><span className="github-label">GitHub</span></a></div></header>
  <main><>{cookieError&&<p role="status" className="preferences-message">{cookieError}</p>}<div className="intro"><h1>{t.title}</h1></div>
  {!eligible.length&&<p className="preferences-message">{language==='vi'?'Pool không có món phù hợp. Tắt bộ lọc chay hoặc thêm món.':'No matching dishes. Turn off the vegetarian filter or add dishes.'}</p>}
  {counterEnabled&&<p className="local-counter" title={language==='vi'?'Lượt mở trên trình duyệt này, lưu bằng cookie':'Spins on this browser, stored in cookies'}>{language==='vi'?'Bạn đã mở':'You have opened'} <strong>{localSpins===null?'—':new Intl.NumberFormat(language==='vi'?'vi-VN':'en-US').format(localSpins)}</strong> {language==='vi'?'hòm trên trình duyệt này':'cases on this browser'}</p>}
@@ -147,6 +159,6 @@ export default function Home(){
 
  <section className="inventory"><div className="section-heading"><div><span className="eyebrow">{t.whatsInside}</span><div className="inventory-title-row"><h2>{t.items} <span>{eligible.length.toString().padStart(2,'0')}</span></h2><PreferencesPanel preferences={preferences} language={language} disabled={spinning} variant="inventory"/></div></div><div className="rarity-legend">{t.tiers.map((tier,i)=><span key={tier}><i style={{background:colors[i]}}/>{tier}</span>)}</div></div><div className="inventory-grid">{inventoryCards}</div></section>
 
- </><footer><span>Trưa Nay Ăn Gì · <a href={`${basePath}/privacy.html`}>{language==='vi'?'Quyền riêng tư':'Privacy'}</a> · <a href={`${basePath}/terms.html`}>{language==='vi'?'Điều khoản':'Terms'}</a></span><span>{t.footer} <a href="https://github.com/sourcesounds/csgo" target="_blank" rel="noreferrer">SourceSounds</a></span></footer>
+ </><footer><span>Trưa Nay Ăn Gì · <a href={`${basePath}/privacy.html`}>{language==='vi'?'Quyền riêng tư':'Privacy'}</a> · <a href={`${basePath}/terms.html`}>{language==='vi'?'Điều khoản':'Terms'}</a> · <a href="#admin" onClick={e=>{e.preventDefault();window.location.hash='#admin';setIsAdmin(true)}}>{language==='vi'?'Quản trị (Admin)':'Admin'}</a></span><span>{t.footer} <a href="https://github.com/sourcesounds/csgo" target="_blank" rel="noreferrer">SourceSounds</a></span></footer>
  </main></div>
 }
